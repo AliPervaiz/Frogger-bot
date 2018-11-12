@@ -4,5 +4,8 @@ function setup() {
 }
 
 function draw() {
-  ellipse(50, 50, 80, 80);
+	var c = color(153, 153, 153);
+	fill(c);
+	noStroke();
+  rect(0, 500, window.innerWidth, 100);
 }
