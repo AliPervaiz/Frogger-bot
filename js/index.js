@@ -1,6 +1,6 @@
 
-/////////////
-// TERRAIN //
+  /////////////
+ // TERRAIN //
 /////////////
 
 const HORIZONTAL_CELLS = 15;
@@ -66,8 +66,8 @@ class Terrain
 	}
 }
 
-/////////////////////
-// M.O. GENERATORS //
+  /////////////////////
+ // M.O. GENERATORS //
 /////////////////////
 
 
@@ -161,5 +161,49 @@ function draw() {
 			line(i*CELL_SIZE,0, i*CELL_SIZE, height);
 		}
 	resetMatrix();
+}
+
+  //////////////////////
+ //       FROG       //
+//////////////////////
+
+const DELAY_TIME = 1000;
+
+class Frog {
+	constructor(x, y)
+	{
+		this.x = x;
+		this.y = y;
+		this.delay = DELAY_TIME;
+	}
+	
+	function up(){
+		if(delayDone())
+			y++;
+	}
+	function down(){
+		if(y != 0 && delayDone())
+			y--;
+	}
+	
+	function right(){
+		if(x != HORIZONTAL_CELLS && delayDone())
+			x++;
+	}
+	
+	function left(){
+		if(x != 0 && delayDone())
+			x--;
+	}
+	
+	function delayDone(){
+		return this.delay > 0;
+	}
+	
+	function draw(){
+		delay--;
+		// DRAW FROG WITH X, Y
+		// BLAKE PLZ FIX
+	}
 }
   
