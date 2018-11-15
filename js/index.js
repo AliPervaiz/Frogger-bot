@@ -6,10 +6,8 @@
 const HORIZONTAL_CELLS = 15;
 const CELL_SIZE = 50;
 
-const NOTHING = 0;
-const CAR = 1;
-const WATER = 2;
-const LOG = 3;
+let GRASS_COLOR;
+let FROG_COLOR;
 
 class Terrain
 {
@@ -58,6 +56,8 @@ class Terrain
 					rect(i*CELL_SIZE, 0, CELL_SIZE, CELL_SIZE);
 				}
 			}
+			translate((HORIZONTAL_CELLS*CELL_SIZE)/2, 0);
+
 		}
 	}
 	
@@ -94,13 +94,11 @@ function getMovingObjectGenerator(width, minSeparation, maxSeparation, velocity,
 		let startCell = Math.floor((this.x+HORIZONTAL_CELLS*CELL_SIZE/2-width/2)/CELL_SIZE);
 		let endCell = Math.floor((this.x+HORIZONTAL_CELLS*CELL_SIZE/2+width/2)/CELL_SIZE);
 
-		console.log(startCell, endCell);
 
 		for(let i=0;i<HORIZONTAL_CELLS;i++){
 			if(startCell <= i && i <= endCell)
 				this.terrain.row[i] = 1;
 		}
-		console.log(this.terrain.row);
 
 		fill(color);
 		noStroke();
@@ -122,45 +120,82 @@ function getMovingObjectGenerator(width, minSeparation, maxSeparation, velocity,
 	return MovingObject;
 }
 
+const PROB_ROAD = 0.5;
+
+let createGrass;
+let createRoad;
+
+//World
+class World{
+	constructor(nTerrains){
+		this.terrains = [];
+
+		this.terrains.push(createGrass());
+		
+		for(let i=1;i<nTerrains;i++){
+			if(Math.random()<PROB_ROAD){
+				this.terrains.push(createRoad());
+			}else{
+				this.terrains.push(createGrass());
+			}
+
+		}
+	}
+
+	draw(){
+		for(let i=0;i<this.terrains.length;i++){
+			translate(0,CELL_SIZE);
+			this.terrains[i].draw(width);
+		}
+		translate(0, -CELL_SIZE*this.terrains.length);
+	}
+}
+
 
 let Car;
-let Car2;
 let terrainRoad;
-let terrainRoad2;
+let myWorld;
 
 function setup() {
+	FROG_COLOR = color(0,120,0);
+	GRASS_COLOR = color(0,255,0);
 	createCanvas(window.innerWidth, window.innerHeight);
-	background('#006600');
-	Car = getMovingObjectGenerator(CELL_SIZE*.8, 70, 300, 0.75, color(255, 0, 0));
-	terrainRoad = new Terrain(color(200, 200, 200), Car, 0);
 
-	Car2 = getMovingObjectGenerator(CELL_SIZE*1.2, 70, 500, -1.25, color(255, 255, 0));
-	terrainRoad2 = new Terrain(color(150, 150, 150), Car2, 0);
+	createGrass = function(){
+		return new Terrain(GRASS_COLOR, null, 1);
+	}
+
+	createRoad = function(){
+		let size = CELL_SIZE * ( 0.8 + Math.random()*1.5 );
+		let minSeparation = 1 * size;
+		let maxSeparation = 6 * size;
+		let velocity = 0.75 + 1.5*Math.random();
+		if(Math.random()<0.5)
+			velocity *= -1;
+		//let Car = getMovingObjectGenerator(CELL_SIZE*(size), minSeparation, maxSeparation, velocity, color(255,0,0));
+		let Car = getMovingObjectGenerator((size), minSeparation, maxSeparation, velocity, color(255,0,0));
+		return new Terrain(color(120), Car, 1);
+	}
+
+	myWorld = new World(10);
 }
 
 function draw() {
-	var c = color(153, 153, 153);
-	fill(c);
+	background(GRASS_COLOR);
 	noStroke();
-	
-	applyMatrix();
-		translate(width/2, CELL_SIZE*4);
-		terrainRoad.draw(width);
-	resetMatrix();
 
 	applyMatrix();
-		translate(width/2, CELL_SIZE*6);
-		terrainRoad2.draw(width);
+	translate(width/2, height*2/3);
+	scale(1,-1);
+	myWorld.draw();
+
 	resetMatrix();
 	
-	applyMatrix();
-		translate(width/2-CELL_SIZE*HORIZONTAL_CELLS/2, 0);
-		stroke(0);
-		strokeWeight(2);
-		for(let i=0;i<=HORIZONTAL_CELLS;i++){
-			line(i*CELL_SIZE,0, i*CELL_SIZE, height);
-		}
-	resetMatrix();
+	
+	fill(0);
+	rect(0,0,width/2-CELL_SIZE*HORIZONTAL_CELLS/2,height);
+	rect(width/2+CELL_SIZE*HORIZONTAL_CELLS/2,0,width/2-CELL_SIZE*HORIZONTAL_CELLS/2,height);
+	
 }
 
 //////////////////////
@@ -208,4 +243,3 @@ class Frog {
 		rect(x_tSpace, 0, CELL_SIZE, CELL_SIZE);
 	}
 }
-  
