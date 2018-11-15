@@ -163,8 +163,8 @@ function draw() {
 	resetMatrix();
 }
 
-  //////////////////////
- //       FROG       //
+//////////////////////
+//       FROG       //
 //////////////////////
 
 const DELAY_TIME = 1000;
@@ -177,33 +177,35 @@ class Frog {
 		this.delay = DELAY_TIME;
 	}
 	
-	function up(){
+	up(){
 		if(delayDone())
 			y++;
 	}
-	function down(){
+
+	down(){
 		if(y != 0 && delayDone())
 			y--;
 	}
 	
-	function right(){
+	right(){
 		if(x != HORIZONTAL_CELLS && delayDone())
 			x++;
 	}
 	
-	function left(){
+	left(){
 		if(x != 0 && delayDone())
 			x--;
 	}
 	
-	function delayDone(){
+	delayDone(){
 		return this.delay > 0;
 	}
 	
-	function draw(){
+	draw(){
 		delay--;
-		// DRAW FROG WITH X, Y
-		// BLAKE PLZ FIX
+		fill(0,255,0);
+		let x_tSpace = (x-HORIZONTAL_CELLS/2)*CELL_SIZE
+		rect(x_tSpace, 0, CELL_SIZE, CELL_SIZE);
 	}
 }
   
