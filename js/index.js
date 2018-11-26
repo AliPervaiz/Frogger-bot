@@ -66,8 +66,8 @@ class Terrain
 	}
 }
 
-  /////////////////////
- // M.O. GENERATORS //
+/////////////////////
+// M.O. GENERATORS //
 /////////////////////
 
 
@@ -149,18 +149,86 @@ class World{
 		}
 		translate(0, -CELL_SIZE*this.terrains.length);
 	}
+
+	isPositionClear(x,y){
+		return this.terrains[y].row[x]==0;
+	}
+}
+
+//////////////////////
+//       FROG       //
+//////////////////////
+
+const DELAY_TIME = 10;
+
+class Frog {
+	constructor(x, y)
+	{
+		this.x = x;
+		this.y = y;
+		this.delay = DELAY_TIME;
+		this.isDead = false;
+	}
+	
+	up(){
+		if(this.delayDone()){
+			this.y++;
+			this.delay = DELAY_TIME;
+		}
+	}
+
+	down(){
+		if(this.y != 0 && this.delayDone()){
+			this.y--;
+			this.delay = DELAY_TIME;
+		}
+	}
+	
+	right(){
+		if(this.x != HORIZONTAL_CELLS-1 && this.delayDone()){
+			this.x++;
+			this.delay = DELAY_TIME;
+		}
+	}
+	
+	left(){
+		if(this.x != 0 && this.delayDone()){
+			this.x--;
+			this.delay = DELAY_TIME;
+		}
+	}
+
+	die(){
+		this.isDead = true;
+	}
+	
+	delayDone(){
+		return this.delay <= 0;
+	}
+	
+	draw(){
+		this.delay--;
+		if(this.isDead)
+			fill(255,0,0);
+		else
+			fill(FROG_COLOR);
+		let x_tSpace = (this.x-HORIZONTAL_CELLS/2)*CELL_SIZE
+		translate(0, CELL_SIZE*(this.y+1));
+		rect(x_tSpace, 0, CELL_SIZE, CELL_SIZE);
+		translate(0, -CELL_SIZE*(this.y));
+	}
 }
 
 
 let Car;
 let terrainRoad;
 let myWorld;
+let frog;
 
 function setup() {
 	FROG_COLOR = color(0,120,0);
 	GRASS_COLOR = color(0,255,0);
 	createCanvas(window.innerWidth, window.innerHeight);
-
 	createGrass = function(){
 		return new Terrain(GRASS_COLOR, null, 1);
 	}
@@ -178,16 +246,40 @@ function setup() {
 	}
 
 	myWorld = new World(10);
+	frog = new Frog(Math.floor(HORIZONTAL_CELLS/2),0);
 }
 
 function draw() {
 	background(GRASS_COLOR);
 	noStroke();
 
+	//check for movement
+	if(keyIsPressed){
+		switch(keyCode){
+		case UP_ARROW:
+			frog.up();
+			break;
+		case DOWN_ARROW:
+			frog.down();
+			break;
+		case LEFT_ARROW:
+			frog.left();
+			break;
+		case RIGHT_ARROW:
+			frog.right();
+			break;
+		}
+	}
+
 	applyMatrix();
 	translate(width/2, height*2/3);
 	scale(1,-1);
 	myWorld.draw();
+	frog.draw();
+
+	if(!myWorld.isPositionClear(frog.x, frog.y)){
+		frog.die();
+	}
 
 	resetMatrix();
 	
@@ -196,50 +288,4 @@ function draw() {
 	rect(0,0,width/2-CELL_SIZE*HORIZONTAL_CELLS/2,height);
 	rect(width/2+CELL_SIZE*HORIZONTAL_CELLS/2,0,width/2-CELL_SIZE*HORIZONTAL_CELLS/2,height);
 	
-}
-
-//////////////////////
-//       FROG       //
-//////////////////////
-
-const DELAY_TIME = 1000;
-
-class Frog {
-	constructor(x, y)
-	{
-		this.x = x;
-		this.y = y;
-		this.delay = DELAY_TIME;
-	}
-	
-	up(){
-		if(delayDone())
-			y++;
-	}
-
-	down(){
-		if(y != 0 && delayDone())
-			y--;
-	}
-	
-	right(){
-		if(x != HORIZONTAL_CELLS && delayDone())
-			x++;
-	}
-	
-	left(){
-		if(x != 0 && delayDone())
-			x--;
-	}
-	
-	delayDone(){
-		return this.delay > 0;
-	}
-	
-	draw(){
-		delay--;
-		fill(0,255,0);
-		let x_tSpace = (x-HORIZONTAL_CELLS/2)*CELL_SIZE
-		rect(x_tSpace, 0, CELL_SIZE, CELL_SIZE);
-	}
 }
