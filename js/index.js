@@ -78,6 +78,7 @@ function getMovingObjectGenerator(width, minSeparation, maxSeparation, velocity,
 
 	let MovingObject = function(terrain){
 		this.terrain = terrain;
+		this.terrain.velocity==velocity;
 		this.cooldown = randomCooldown();
 		this.x = (-HORIZONTAL_CELLS*CELL_SIZE-width)/2;
 		if(velocity<0)
@@ -215,10 +216,162 @@ class Frog {
 		let x_tSpace = (this.x-HORIZONTAL_CELLS/2)*CELL_SIZE
 		translate(0, CELL_SIZE*(this.y+1));
 		rect(x_tSpace, 0, CELL_SIZE, CELL_SIZE);
-		translate(0, -CELL_SIZE*(this.y));
+		translate(0, -CELL_SIZE*(this.y+1));
 	}
 }
 
+const GRID_WIDTH = 3;
+const GRID_HEIGHT = 2;
+
+const TYPE_POS_VEL = 1;
+const TYPE_NEG_VEL = 2;
+const TYPE_WALL = 3;
+
+class Grid{
+	constructor(type){
+		this.spots = [];
+		this.type = type;
+	}
+
+	int_evaluateVelocity(world, x, y, vel){
+		const xStart = x-GRID_WIDTH;
+		const xEnd = x+GRID_WIDTH;
+		const yStart = y-GRID_HEIGHT;
+		const yEnd = y+GRID_HEIGHT;
+		let arrayIndex = 0;
+		for(let j=yStart;j<=yEnd;j++){
+			if(j<0||j>world.terrains.length-1||world.terrains[j].velocity!=vel){
+				for(let i=xStart;i<xEnd;i++){
+					this.spots[arrayIndex++] = 0;
+				}
+			}else
+				for(let i=xStart;i<=xEnd;i++){
+					if(i<0||i>HORIZONTAL_CELLS-1||world.terrains[j].row[i]==0)
+						this.spots[arrayIndex++] = 0;
+					else{
+						this.spots[arrayIndex++] = 1;
+					}
+				}
+		}
+	}
+
+	int_evaluateWall(world, x, y){
+		const xStart = x-GRID_WIDTH;
+		const xEnd = x+GRID_WIDTH;
+		const yStart = y-GRID_HEIGHT;
+		const yEnd = y+GRID_HEIGHT;
+		let arrayIndex = 0;
+		for(let j=yStart;j<=yEnd;j++){
+			if(j<0||j>world.terrains.length-1){
+				for(let i=xStart;i<xEnd;i++){
+					this.spots[arrayIndex++] = 1;
+				}
+			}else
+				for(let i=xStart;i<=xEnd;i++){
+					if(i<2||i>HORIZONTAL_CELLS-3)
+						this.spots[arrayIndex++] = 1;
+					else
+						this.spots[arrayIndex++] = 0;
+				}
+		}
+	}
+
+	evaluate(world, x, y){
+		switch(this.type){
+		case TYPE_POS_VEL:
+			this.int_evaluateVelocity(world, x, y, 1);
+			break;	
+		case TYPE_NEG_VEL:
+			this.int_evaluateVelocity(world, x, y, -1);
+			break;
+		case TYPE_WALL:
+			this.int_evaluateGrid(world,x,y);
+			break;
+		}
+	}
+}
+
+class NeuralNet{
+	//should return 5 outputs
+	feed(){
+		//TODO
+	}
+
+	getMutant(){
+		//TODO
+	}
+
+	getBlend(other){
+		//TODO
+	}
+}
+
+class FrogPlayer{
+	constructor(neuralNet){
+		this.data = [
+			new Grid(TYPE_POS_VEL),
+			new Grid(TYPE_NEG_VEL),
+			new Grid(TYPE_WALL)
+		];
+		this.neuralNet = neuralNet;
+		this.wasDead = false;
+	}
+
+	reset(world){
+		this.world = world;
+		this.frog = new Frog(Math.floor(HORIZONTAL_CELLS/2),0);
+		this.wasDead = false;
+	}
+
+	//returns true if not dead
+	draw(){
+		if(this.frog.isDead){
+			if(!this.frog.wasDead){
+				this.frog.wasDead = true;
+				//this is when the frog dies
+			}
+			return false;
+		}
+
+		this.data.forEach(grid=>grid.evaluate(this.world, this.frog.x, this.frog.y));
+		let output = this.neuralNet.feed(this.data);	//feed neural network grid data
+		
+		//calculate max index of output (this will be used to determine which move to make)
+		let max = -999;									
+		let maxIndex = -1;
+		output.forEach((value, index)=>{
+			if(value>max){
+				max = value;
+				maxIndex = index;
+			}
+		});
+
+		//then, move the frog based on the output
+		switch(maxIndex){
+		case 0:
+			this.frog.left();
+			break;
+		case 1:
+			this.frog.right();
+			break;
+		case 2:
+			this.frog.up();
+			break;
+		case 3:
+			this.frog.down();
+			break;
+		case 4:
+			//frog doesn't move
+			break;
+		}
+
+	}
+
+	getFitness(){
+
+	}
+
+}
 
 let Car;
 let terrainRoad;
