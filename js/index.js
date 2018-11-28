@@ -276,6 +276,7 @@ class Grid{
 		}
 	}
 
+	//fill grid spaces with appropriate values
 	evaluate(world, x, y){
 		switch(this.type){
 		case TYPE_POS_VEL:
@@ -291,9 +292,35 @@ class Grid{
 	}
 }
 
+const INPUT_SIZE = GRID_HEIGHT*GRID_WIDTH*3;
+const OUTPUT_SIZE = 5;
+const N_INTERMEDIATE_LAYERS = 2;
+
 class NeuralNet{
+
+	constructor(){
+		this.neuronLayers = [];
+		
+		//initialize neuron layers
+		for(let i=0;i<N_INTERMEDIATE_LAYERS;i++)
+			this.neuronLayers.push([]);
+		
+		//initialize last layer & set output neuron biases
+		let lastLayer = [];
+		for(let i=0;i<OUTPUT_SIZE;i++){
+			lastLayer.push({
+				weights: [],
+				bias: Math.random(),
+				activation: 0
+			});
+		}
+		this.neuronLayers.push(lastLayer);
+	
+	}
+
 	//should return 5 outputs
-	feed(){
+	feed(grids){
+		
 		//TODO
 	}
 
@@ -303,6 +330,33 @@ class NeuralNet{
 
 	getBlend(other){
 		//TODO
+	}
+
+
+
+	//mutaion functions
+	createAxon(){
+
+	}
+
+	removeAxon(){
+
+	}
+
+	modifyAxon(){
+
+	}
+
+	createNeuron(){
+
+	}
+
+	removeNeuron(){
+
+	}
+
+	modifyNeuron(){
+
 	}
 }
 
