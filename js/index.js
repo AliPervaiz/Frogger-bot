@@ -296,31 +296,10 @@ const INPUT_SIZE = GRID_HEIGHT*GRID_WIDTH*3;
 const OUTPUT_SIZE = 5;
 const N_INTERMEDIATE_LAYERS = 2;
 
-function activationFunction(inputs, bias){
-
-}
-
-class Neuron{
-	constructor(){
-		this.activation = 0;
-		this.feeders = [];
-		this.bias = Math.random();
-	}
-
-	calc(){
-		this.activation = activationFunction(this.feeders.map(feeder=>feeder.activation));
-	}
-}
-
 class NeuralNet{
 
 	constructor(){
 		this.neuronLayers = [];
-
-		let firstLayer = [];
-		for(let i=0;i<INPUT_SIZE; i++){
-			firstLayer.push(new Neuron());
-		}
 		
 		//initialize neuron layers
 		for(let i=0;i<N_INTERMEDIATE_LAYERS;i++)
@@ -329,7 +308,11 @@ class NeuralNet{
 		//initialize last layer & set output neuron biases
 		let lastLayer = [];
 		for(let i=0;i<OUTPUT_SIZE;i++){
-			lastLayer.push(new Neuron());
+			lastLayer.push({
+				weights: [],
+				bias: Math.random(),
+				activation: 0
+			});
 		}
 		this.neuronLayers.push(lastLayer);
 	
@@ -337,26 +320,19 @@ class NeuralNet{
 
 	//should return 5 outputs
 	feed(grids){
-		//set the first layer's neuron activations
-		grids.forEach((grid, i)=>{
-			grid.spots.forEach((num, j)=>{
-				this.neuronLayers[0][i*grid.spots.legnth+j].activation = num;
-			});
-		});
-
-		//calculate the following layers' neurons' activations
-		this.neuronLayers.forEach((neuronLayer, layerIndex)=>{
-			if(layerIndex>0)
-				neuronLayer.forEach(neuron=>neuron.calc());
-		});
-
-		//return output activations
-		return this.neuronLayers[this.neuronLayer.length-1].map(neuron=>neuron.activation);
+		
+		//TODO
 	}
 
 	getMutant(){
 		//TODO
 	}
+
+	getBlend(other){
+		//TODO
+	}
+
+
 
 	//mutaion functions
 	createAxon(){
@@ -446,16 +422,7 @@ class FrogPlayer{
 	}
 
 	getFitness(){
-		//todo
-	}
 
-	mutate(){
-		//todo
-	}
-
-	//called if the hasn't made progress
-	shouldTerminate(){
-		//todo
 	}
 
 }
@@ -527,5 +494,75 @@ function draw() {
 	fill(0);
 	rect(0,0,width/2-CELL_SIZE*HORIZONTAL_CELLS/2,height);
 	rect(width/2+CELL_SIZE*HORIZONTAL_CELLS/2,0,width/2-CELL_SIZE*HORIZONTAL_CELLS/2,height);
+	
+}
+
+class Controller{
+	
+	// var frogs is a list of Frog instances
+	constructor(frogs){
+		this.frogs = frogs;
+		this.running = false;
+	}
+	
+	constructor(n){
+		this.frogs = createPopulation(n);
+		this.running = false;
+	}
+	
+	function createPopulation(n){
+		this.frogs = [];
+		for(var i = 0;i<n;i++){
+			
+			frogs.push(new FrogPlayer(new NeuralNet()));
+	}
+	
+	function simulate(){
+		running = true;
+	}
+	
+	function stop(){
+		running = false;
+	}
+	
+	function getBest(){
+		
+		var best = {};
+		var fitnessAvg = 0;
+		var totalFitness = 0;
+		for(var i = 0;i<this.frogs.length;i++){
+			totalFitness += this.frogs[i].getFitness();
+		}
+		fitnessAvg = totalFitness / this.frogs.length;
+		
+		/*
+		for(var i = 0;i<this.frogs.length;i++){
+			if(this.frogs[i].getFitness() >= fitnessAvg){
+				best.push(this.frogs[i]);
+			}
+		}
+		*/
+		
+		
+		for(var i = 0;i<this.frogs.length;i++){
+			var prob = this.frogs[i].getFitness() / totalFitness;
+			if(Math.random() < prob){
+				best.push(this.frogs[i]);
+			}
+		}
+		
+		
+		return best;
+	}
+	
+	function draw(){
+		if(this.running){
+			for(var i = 0;i<this.frogs.length;i++){
+				
+				
+				var alive = this.frogs[i].draw();
+			}
+		}
+	}
 	
 }
