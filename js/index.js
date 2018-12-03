@@ -498,34 +498,27 @@ function draw() {
 }
 
 class Controller{
-	
-	// var frogs is a list of Frog instances
-	constructor(frogs){
-		this.frogs = frogs;
-		this.running = false;
-	}
-	
 	constructor(n){
 		this.frogs = createPopulation(n);
 		this.running = false;
 	}
 	
-	function createPopulation(n){
+	createPopulation(n){
 		this.frogs = [];
 		for(var i = 0;i<n;i++){
 			
 			frogs.push(new FrogPlayer(new NeuralNet()));
 	}
 	
-	function simulate(){
+	simulate(){
 		running = true;
 	}
 	
-	function stop(){
+	stop(){
 		running = false;
 	}
 	
-	function getBest(){
+	getBest(){
 		
 		var best = {};
 		var fitnessAvg = 0;
@@ -555,7 +548,7 @@ class Controller{
 		return best;
 	}
 	
-	function draw(){
+	draw(){
 		if(this.running){
 			for(var i = 0;i<this.frogs.length;i++){
 				
