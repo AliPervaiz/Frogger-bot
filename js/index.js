@@ -506,8 +506,8 @@ class Controller{
 	createPopulation(n){
 		this.frogs = [];
 		for(var i = 0;i<n;i++){
-			
 			frogs.push(new FrogPlayer(new NeuralNet()));
+		}
 	}
 	
 	simulate(){
