@@ -305,8 +305,23 @@ class Neuron {
 		this.feeders = [];
 		this.bias = Math.random();
 	}
+
 	calc() {
-		this.activation = activationFunction(this.feeders.map(feeder => feeder.activation));
+		this.activation = activationFunction(this.feeders.map(feeder => feeder[0].activation*feeder[1]));
+	}
+
+	addAxon(feederNeuron, weight){
+		this.feeders.push([feederNeuron, weight]);
+		return [this,this.feeders.length-1];
+	}
+
+	clone(neuronMapping){
+		let returner = new Neuron();
+		returner.bias = this.bias;
+		this.feeders.forEach((feeder)=>{
+			returner.feeders.push([neuronMapping[feeder[0]], feeder[1]]);
+		});
+		return returner;
 	}
 }
 
@@ -314,6 +329,7 @@ class NeuralNet{
 
 	constructor(){
 		this.neuronLayers = [];
+		this.axons = [];
 
 		let firstLayer = [];
 		for (let i = 0; i < INPUT_SIZE; i++) {
@@ -351,33 +367,92 @@ class NeuralNet{
 		return this.neuronLayers[this.neuronLayer.length - 1].map(neuron => neuron.activation);
 	}
 
+
 	getMutant(){
+		let returner = this.clone();
 		//TODO
+	}
+
+	getTotalNeurons(startLayer, endLayer){
+		let sum = 0;
+		for(let i=startLayer;i<endLayer;i++)
+			sum+=this.neuronLayers[i].length;
+		return sum;
+	}
+
+	getRandomNeuron(startLayer, endLayer){
+		let numNeurons = this.getTotalNeurons(startLayer,endLayer);
+		let index = Math.floor(Math.random()*numNeurons);
+		let cIndex = 0;
+		let layerIndex = startLayer;
+		let nIndex = 0;
+		let neuron;
+		while(true){
+			cIndex+=this.neuronLayers[layerIndex].length;
+			if(index>cIndex){
+				layerIndex++;
+				continue;
+			}
+			cIndex-=this.neuronLayers[layerIndex];
+			nIndex = index-cIndex;
+			neuron = this.neuronLayers[nIndex];
+			break;
+		}
+		return [neuron, layerIndex, nIndex];
 	}
 
 	//mutaion functions
 	createAxon(){
+		let endNeuron = getRandomNeuron(1,this.neuronLayers.length);
+		let startNeuron = this.getRandomNeuron(0,endNeuron[1]);
 
-	}
-
-	removeAxon(){
-
+		this.axons.push(endNeuron[0].addAxon(startNeuron[0], Math.random()));
 	}
 
 	modifyAxon(){
-
+		let i = Math.floor(Math.random()*this.axons.length);
+		let axon = this.axons[i];
+		axon[0].feeders[axon[1]][1]=Math.random();
 	}
 
 	createNeuron(){
-
-	}
-
-	removeNeuron(){
-
+		let neuron = new Neuron();
+		let layerIndex = 1+Math.floor(Math.random()*N_INTERMEDIATE_LAYERS);
+		this.neuronLayers[layerIndex].push(neuron);
 	}
 
 	modifyNeuron(){
+		this.getRandomNeuron(1, this.neuronLayers.length).bias = Math.random();
+	}
 
+	clone(){
+		let neuronMapping = {};
+		let positionMapping = {};
+		for(let i=0;i<this.neuronLayers.length;i++){
+			let neuronLayer = this.neuronLayers[i];
+			for(let j=0;j<neuronLayer.length;j++){
+				const neuron = neuronLayer[j];
+				neuronMapping[neuron] = neuron.clone(neuronMapping);
+				positionMapping[neuronMapping[neuron]] = [i,j];
+			}
+		}
+
+		let returner = new NeuralNet();
+
+		for(let newNeuron of neuronMapping){
+			let position = positionMapping[newNeuron];
+			returner.neuronLayers[position[0]][position[1]]=newNeuron;
+		}
+
+		for(let oldAxon of this.axons){
+			let newAxon = [
+				neuronMapping[oldAxon[0]],
+				oldAxon[1]
+			];
+			returner.axons.push(newAxon);
+		}
+
+		return returner;
 	}
 }
 
