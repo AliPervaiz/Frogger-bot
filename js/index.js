@@ -127,6 +127,7 @@ let createGrass;
 let createRoad;
 
 //World
+//a new world should be created for each generation
 class World{
 	constructor(nTerrains){
 		this.terrains = [];
@@ -162,6 +163,7 @@ class World{
 
 const DELAY_TIME = 10;
 
+//the frog class only displays the frog; the frog player handles logic.
 class Frog {
 	constructor(x, y)
 	{
@@ -227,6 +229,7 @@ const TYPE_POS_VEL = 1;
 const TYPE_NEG_VEL = 2;
 const TYPE_WALL = 3;
 
+//grid stores data about the environment. a grid is associated with each frog player
 class Grid{
 	constructor(type){
 		this.spots = [];
@@ -350,6 +353,7 @@ class NeuralNet{
 	
 	}
 
+	//feeds the neural network with input data from grids
 	//should return 5 outputs
 	feed(grids){
 		//set the first layer's neuron activations
@@ -369,6 +373,7 @@ class NeuralNet{
 	}
 
 
+	//returns a mutated clone of this
 	getMutant(){
 		let returner = this.clone();
 		
@@ -395,6 +400,7 @@ class NeuralNet{
 		return returner;
 	}
 
+	//returns total number of neurons
 	getTotalNeurons(startLayer, endLayer){
 		let sum = 0;
 		for(let i=startLayer;i<endLayer;i++)
@@ -402,6 +408,7 @@ class NeuralNet{
 		return sum;
 	}
 
+	//returns a random neuron between a range of layers (inclusive, exclusive)
 	getRandomNeuron(startLayer, endLayer){
 		let numNeurons = this.getTotalNeurons(startLayer,endLayer);
 		let index = Math.floor(Math.random()*numNeurons);
@@ -424,6 +431,8 @@ class NeuralNet{
 	}
 
 	//mutaion functions
+
+	//randomly creates an axon between neurons
 	createAxon(){
 		let endNeuron = getRandomNeuron(1,this.neuronLayers.length);
 		let startNeuron = this.getRandomNeuron(0,endNeuron[1]);
@@ -431,6 +440,7 @@ class NeuralNet{
 		this.axons.push(endNeuron[0].addAxon(startNeuron[0], Math.random()));
 	}
 
+	//nudges the weight value of a random axon by a small amount
 	nudgeAxon(){
 		let i = Math.floor(Math.random()*this.axons.length);
 		let axon = this.axons[i];
@@ -438,22 +448,26 @@ class NeuralNet{
 		axon[0].feeders[axon[1]][1]+=nudgeAmount;
 	}
 
+	//changes the value of a random axon's weight value to a random amount
 	modifyAxon(){
 		let i = Math.floor(Math.random()*this.axons.length);
 		let axon = this.axons[i];
 		axon[0].feeders[axon[1]][1]=Math.random();
 	}
 
+	//creats a neuron at a random layer
 	createNeuron(){
 		let neuron = new Neuron();
 		let layerIndex = 1+Math.floor(Math.random()*N_INTERMEDIATE_LAYERS);
 		this.neuronLayers[layerIndex].push(neuron);
 	}
 
+	//modifies a neuron's bias
 	modifyNeuron(){
 		this.getRandomNeuron(1, this.neuronLayers.length).bias = Math.random();
 	}
 
+	//returns a clone of this neural net
 	clone(){
 		let neuronMapping = {};
 		let positionMapping = {};
