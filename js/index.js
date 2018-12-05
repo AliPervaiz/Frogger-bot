@@ -144,15 +144,6 @@ class World{
 	}
 
 	draw(){
-		console.log(frog.y + " " + this.terrains.length);
-		if(frog.y+10>this.terrains.length)
-		{
-			if(Math.random()<PROB_ROAD){
-				this.terrains.push(createRoad());
-			}else{
-				this.terrains.push(createGrass());
-			}
-		}
 		for(let i=0;i<this.terrains.length;i++){
 			translate(0,CELL_SIZE);
 			this.terrains[i].draw(width);
@@ -295,7 +286,7 @@ class Grid{
 			this.int_evaluateVelocity(world, x, y, -1);
 			break;
 		case TYPE_WALL:
-			this.int_evaluateGrid(world,x,y);
+			this.int_evaluateWall(world,x,y);
 			break;
 		}
 	}
@@ -397,7 +388,7 @@ class FrogPlayer{
 		}
 
 		this.data.forEach(grid=>grid.evaluate(this.world, this.frog.x, this.frog.y));
-		let output = this.neuralNet.feed(this.data);	//feed neural network grid data
+		/*let output = this.neuralNet.feed(this.data);	//feed neural network grid data
 		
 		//calculate max index of output (this will be used to determine which move to make)
 		let max = -999;									
@@ -407,8 +398,16 @@ class FrogPlayer{
 				max = value;
 				maxIndex = index;
 			}
-		});
+		});*/
+		
+		var maxIndex = Math.floor(Math.random()*5);
 
+		this.frog.draw();
+		
+		if(!this.world.isPositionClear(this.frog.x, this.frog.y)){
+			this.frog.die();
+		}
+		
 		//then, move the frog based on the output
 		switch(maxIndex){
 		case 0:
@@ -440,6 +439,10 @@ let Car;
 let terrainRoad;
 let myWorld;
 let frog;
+let controller;
+var running = false;
+
+const POPULATION_SIZE = 100;
 
 function setup() {
 	FROG_COLOR = color(0,120,0);
@@ -460,8 +463,9 @@ function setup() {
 		let Car = getMovingObjectGenerator((size), minSeparation, maxSeparation, velocity, color(255,0,0));
 		return new Terrain(color(120), Car, 1);
 	}
-
+	
 	myWorld = new World(10);
+	controller = new Controller(POPULATION_SIZE, myWorld);
 	frog = new Frog(Math.floor(HORIZONTAL_CELLS/2),0);
 }
 
@@ -490,12 +494,13 @@ function draw() {
 	applyMatrix();
 	translate(width/2, height*2/3);
 	scale(1,-1);
-	translate(0, -CELL_SIZE*frog.y);
 	myWorld.draw();
 	frog.draw();
+	controller.draw();
+	if(!running){
+		controller.simulate();
+	}
 
-	translate(0, CELL_SIZE*frog.y);
-	
 	if(!myWorld.isPositionClear(frog.x, frog.y)){
 		frog.die();
 	}
@@ -510,62 +515,69 @@ function draw() {
 }
 
 class Controller{
-	constructor(n){
-		this.frogs = createPopulation(n);
+	constructor(n, world){
+		this.world = world;
+		this.frogs = this.createPopulation(n);
 		this.running = false;
 	}
 	
 	createPopulation(n){
-		this.frogs = [];
+		var frogs = [];
 		for(var i = 0;i<n;i++){
-			frogs.push(new FrogPlayer(new NeuralNet()));
+			var frog = new FrogPlayer(new NeuralNet());
+			frog.reset(this.world);
+			frogs.push(frog);
+			//console.log(frogs[i]);
 		}
+		return frogs;
+	}
+	
+	setWorld(world){
+		this.world = world;
+	}
+	
+	/*
+		Returns the best y value out of all the frogs (furthest frog)
+	*/
+	getBestFrog(){
+		var best = 0;
+		for(var i = 0;i<this.frogs.length;i++){
+			if(this.frogs[i].frog.y > best){
+				best = this.frogs[i].frog.y;
+			}
+		}
+		return best;
 	}
 	
 	simulate(){
-		running = true;
+		this.running = true;
 	}
 	
 	stop(){
-		running = false;
+		this.running = false;
 	}
 	
+	/*
 	getBest(){
-		
 		var best = {};
 		var fitnessAvg = 0;
-		var totalFitness = 0;
+		var maxFitness = 0;
 		for(var i = 0;i<this.frogs.length;i++){
-			totalFitness += this.frogs[i].getFitness();
-		}
-		fitnessAvg = totalFitness / this.frogs.length;
-		
-		/*
-		for(var i = 0;i<this.frogs.length;i++){
-			if(this.frogs[i].getFitness() >= fitnessAvg){
-				best.push(this.frogs[i]);
+			var fitness = this.frogs[i].getFitness();
+			if(fitness > maxFitness){
+				maxFitness = fitness;
 			}
 		}
-		*/
-		
-		
-		for(var i = 0;i<this.frogs.length;i++){
-			var prob = this.frogs[i].getFitness() / totalFitness;
-			if(Math.random() < prob){
-				best.push(this.frogs[i]);
-			}
-		}
-		
 		
 		return best;
 	}
+	*/
 	
 	draw(){
 		if(this.running){
 			for(var i = 0;i<this.frogs.length;i++){
-				
-				
 				var alive = this.frogs[i].draw();
+				//console.log(this.frogs[i].frog.y);
 			}
 		}
 	}
