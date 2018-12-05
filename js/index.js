@@ -144,7 +144,7 @@ class World{
 	}
 
 	draw(){
-		if(frog.y + 10 > this.terrains.length){
+		if(controller.getBestFrog() + 10 > this.terrains.length){
 			if(Math.random()<PROB_ROAD){
 				this.terrains.push(createRoad());
 			}else{
@@ -502,11 +502,12 @@ function draw() {
 	translate(width/2, height*2/3);
 	scale(1,-1);
 	
-	translate(0, -CELL_SIZE*frog.y);
+	var y = controller.getBestFrog();
+	translate(0, -CELL_SIZE*y);
 	myWorld.draw();
 	frog.draw();
 	controller.draw();
-	translate(0, CELL_SIZE*frog.y);
+	translate(0, CELL_SIZE*y);
 	
 	if(!running){
 		controller.simulate();
@@ -553,7 +554,7 @@ class Controller{
 	getBestFrog(){
 		var best = 0;
 		for(var i = 0;i<this.frogs.length;i++){
-			if(this.frogs[i].frog.y > best){
+			if(this.frogs[i].frog.y > best && !this.frogs[i].frog.isDead){
 				best = this.frogs[i].frog.y;
 			}
 		}
