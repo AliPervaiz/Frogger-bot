@@ -145,7 +145,7 @@ class World{
 
 	draw(){
 		if(frog.y + 10 > this.terrains.length){
-			if(Math.random()<PROB_ROAD({
+			if(Math.random()<PROB_ROAD){
 				this.terrains.push(createRoad());
 			}else{
 				this.terrains.push(createGrass());			   
@@ -505,9 +505,9 @@ function draw() {
 	translate(0, -CELL_SIZE*frog.y);
 	myWorld.draw();
 	frog.draw();
+	controller.draw();
 	translate(0, CELL_SIZE*frog.y);
 	
-	controller.draw();
 	if(!running){
 		controller.simulate();
 	}
