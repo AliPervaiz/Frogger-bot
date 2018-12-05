@@ -144,6 +144,13 @@ class World{
 	}
 
 	draw(){
+		if(frog.y + 10 > this.terrains.length){
+			if(Math.random()<PROB_ROAD({
+				this.terrains.push(createRoad());
+			}else{
+				this.terrains.push(createGrass());			   
+			}
+		}
 		for(let i=0;i<this.terrains.length;i++){
 			translate(0,CELL_SIZE);
 			this.terrains[i].draw(width);
@@ -494,8 +501,12 @@ function draw() {
 	applyMatrix();
 	translate(width/2, height*2/3);
 	scale(1,-1);
+	
+	translate(0, -CELL_SIZE*frog.y);
 	myWorld.draw();
 	frog.draw();
+	translate(0, CELL_SIZE*frog.y);
+	
 	controller.draw();
 	if(!running){
 		controller.simulate();
