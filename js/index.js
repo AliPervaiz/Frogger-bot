@@ -297,6 +297,7 @@ const OUTPUT_SIZE = 5;
 const N_INTERMEDIATE_LAYERS = 2;
 
 function activationFunction(inputs, bias) {
+	//TODO
 }
 
 class Neuron {
@@ -370,7 +371,28 @@ class NeuralNet{
 
 	getMutant(){
 		let returner = this.clone();
-		//TODO
+		
+		let numCreations = Math.ceil((Math.random()-0.8)*5);
+		if(numCreations>0)
+			for(let i=0;i<numCreations;i++)
+				returner.createNeuron();
+		
+		let numNudges = Math.ceil((Math.random()-0.3)*10);
+		if(numNudges>0)
+			for(let i=0;i<numNudges;i++)
+				returner.nudgeAxon();
+		
+		let numModifications = Math.ceil((Math.random()-0.5)*5);
+		if(numModifications>0)
+			for(let i=0;i<numModifications;i++)
+				returner.modifyAxon();
+		
+		let numCreationsAxon = Math.ceil((Math.random()-0.5)*5);
+		if(numCreationsAxon>0)
+			for(let i=0;i<numCreationsAxon;i++)
+				returner.createAxon();
+		
+		return returner;
 	}
 
 	getTotalNeurons(startLayer, endLayer){
@@ -407,6 +429,13 @@ class NeuralNet{
 		let startNeuron = this.getRandomNeuron(0,endNeuron[1]);
 
 		this.axons.push(endNeuron[0].addAxon(startNeuron[0], Math.random()));
+	}
+
+	nudgeAxon(){
+		let i = Math.floor(Math.random()*this.axons.length);
+		let axon = this.axons[i];
+		let nudgeAmount = Math.random()>0.5?0.2:-0.2;
+		axon[0].feeders[axon[1]][1]+=nudgeAmount;
 	}
 
 	modifyAxon(){
