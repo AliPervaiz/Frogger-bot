@@ -318,11 +318,15 @@ function activationFunction(inputs, bias) {
 	return Math.tanh(sum);
 }
 
+function genRand(){
+	return 2*Math.random() - 1;
+}
+
 class Neuron {
 	constructor() {
 		this.activation = 0;
 		this.feeders = [];
-		this.bias = Math.random();
+		this.bias = getRand();
 	}
 
 	calc() {
@@ -452,7 +456,7 @@ class NeuralNet{
 		let endNeuron = getRandomNeuron(1,this.neuronLayers.length);
 		let startNeuron = this.getRandomNeuron(0,endNeuron[1]);
 
-		this.axons.push(endNeuron[0].addAxon(startNeuron[0], Math.random()));
+		this.axons.push(endNeuron[0].addAxon(startNeuron[0], getRand()));
 	}
 
 	//nudges the weight value of a random axon by a small amount
@@ -467,7 +471,7 @@ class NeuralNet{
 	modifyAxon(){
 		let i = Math.floor(Math.random()*this.axons.length);
 		let axon = this.axons[i];
-		axon[0].feeders[axon[1]][1]=Math.random();
+		axon[0].feeders[axon[1]][1]=getRand();
 	}
 
 	//creats a neuron at a random layer
@@ -479,7 +483,7 @@ class NeuralNet{
 
 	//modifies a neuron's bias
 	modifyNeuron(){
-		this.getRandomNeuron(1, this.neuronLayers.length).bias = Math.random();
+		this.getRandomNeuron(1, this.neuronLayers.length).bias = getRand();
 	}
 
 	//returns a clone of this neural net
