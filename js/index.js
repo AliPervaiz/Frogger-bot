@@ -127,6 +127,7 @@ let createGrass;
 let createRoad;
 
 //World
+//a new world should be created for each generation
 class World{
 	constructor(nTerrains){
 		this.terrains = [];
@@ -144,6 +145,13 @@ class World{
 	}
 
 	draw(){
+		if(controller.getBestFrog() + 10 > this.terrains.length){
+			if(Math.random()<PROB_ROAD){
+				this.terrains.push(createRoad());
+			}else{
+				this.terrains.push(createGrass());			   
+			}
+		}
 		for(let i=0;i<this.terrains.length;i++){
 			translate(0,CELL_SIZE);
 			this.terrains[i].draw(width);
@@ -162,6 +170,7 @@ class World{
 
 const DELAY_TIME = 10;
 
+//the frog class only displays the frog; the frog player handles logic.
 class Frog {
 	constructor(x, y)
 	{
@@ -227,6 +236,7 @@ const TYPE_POS_VEL = 1;
 const TYPE_NEG_VEL = 2;
 const TYPE_WALL = 3;
 
+//grid stores data about the environment. a grid is associated with each frog player
 class Grid{
 	constructor(type){
 		this.spots = [];
@@ -296,10 +306,46 @@ const INPUT_SIZE = GRID_HEIGHT*GRID_WIDTH*3;
 const OUTPUT_SIZE = 5;
 const N_INTERMEDIATE_LAYERS = 2;
 
+function activationFunction(inputs, bias) {
+	//TODO
+}
+
+class Neuron {
+	constructor() {
+		this.activation = 0;
+		this.feeders = [];
+		this.bias = Math.random();
+	}
+
+	calc() {
+		this.activation = activationFunction(this.feeders.map(feeder => feeder[0].activation*feeder[1]));
+	}
+
+	addAxon(feederNeuron, weight){
+		this.feeders.push([feederNeuron, weight]);
+		return [this,this.feeders.length-1];
+	}
+
+	clone(neuronMapping){
+		let returner = new Neuron();
+		returner.bias = this.bias;
+		this.feeders.forEach((feeder)=>{
+			returner.feeders.push([neuronMapping[feeder[0]], feeder[1]]);
+		});
+		return returner;
+	}
+}
+
 class NeuralNet{
 
 	constructor(){
 		this.neuronLayers = [];
+		this.axons = [];
+
+		let firstLayer = [];
+		for (let i = 0; i < INPUT_SIZE; i++) {
+			firstLayer.push(new Neuron());
+		}
 		
 		//initialize neuron layers
 		for(let i=0;i<N_INTERMEDIATE_LAYERS;i++)
@@ -308,57 +354,159 @@ class NeuralNet{
 		//initialize last layer & set output neuron biases
 		let lastLayer = [];
 		for(let i=0;i<OUTPUT_SIZE;i++){
-			lastLayer.push({
-				weights: [],
-				bias: Math.random(),
-				activation: 0
-			});
+			lastLayer.push(new Neuron());
 		}
 		this.neuronLayers.push(lastLayer);
 	
 	}
 
+	//feeds the neural network with input data from grids
 	//should return 5 outputs
 	feed(grids){
-		
-		//TODO
+		//set the first layer's neuron activations
+		grids.forEach((grid, i)=>{
+			grid.spots.forEach((num, j)=>{
+				this.neuronLayers[0][i*grid.spots.legnth+j].activation = num;
+			});
+		});
+
+		//calculate the following layers' neurons' activations
+		this.neuronLayers.forEach((neuronLayer, layerIndex) => {
+			if (layerIndex > 0)
+				neuronLayer.forEach(neuron => neuron.calc());
+		});
+		//return output activations
+		return this.neuronLayers[this.neuronLayer.length - 1].map(neuron => neuron.activation);
 	}
 
+
+	//returns a mutated clone of this
 	getMutant(){
-		//TODO
+		let returner = this.clone();
+		
+		let numCreations = Math.ceil((Math.random()-0.8)*5);
+		if(numCreations>0)
+			for(let i=0;i<numCreations;i++)
+				returner.createNeuron();
+		
+		let numNudges = Math.ceil((Math.random()-0.3)*10);
+		if(numNudges>0)
+			for(let i=0;i<numNudges;i++)
+				returner.nudgeAxon();
+		
+		let numModifications = Math.ceil((Math.random()-0.5)*5);
+		if(numModifications>0)
+			for(let i=0;i<numModifications;i++)
+				returner.modifyAxon();
+		
+		let numCreationsAxon = Math.ceil((Math.random()-0.5)*5);
+		if(numCreationsAxon>0)
+			for(let i=0;i<numCreationsAxon;i++)
+				returner.createAxon();
+		
+		return returner;
 	}
 
-	getBlend(other){
-		//TODO
+	//returns total number of neurons
+	getTotalNeurons(startLayer, endLayer){
+		let sum = 0;
+		for(let i=startLayer;i<endLayer;i++)
+			sum+=this.neuronLayers[i].length;
+		return sum;
 	}
 
-
+	//returns a random neuron between a range of layers (inclusive, exclusive)
+	getRandomNeuron(startLayer, endLayer){
+		let numNeurons = this.getTotalNeurons(startLayer,endLayer);
+		let index = Math.floor(Math.random()*numNeurons);
+		let cIndex = 0;
+		let layerIndex = startLayer;
+		let nIndex = 0;
+		let neuron;
+		while(true){
+			cIndex+=this.neuronLayers[layerIndex].length;
+			if(index>cIndex){
+				layerIndex++;
+				continue;
+			}
+			cIndex-=this.neuronLayers[layerIndex];
+			nIndex = index-cIndex;
+			neuron = this.neuronLayers[nIndex];
+			break;
+		}
+		return [neuron, layerIndex, nIndex];
+	}
 
 	//mutaion functions
+
+	//randomly creates an axon between neurons
 	createAxon(){
+		let endNeuron = getRandomNeuron(1,this.neuronLayers.length);
+		let startNeuron = this.getRandomNeuron(0,endNeuron[1]);
 
+		this.axons.push(endNeuron[0].addAxon(startNeuron[0], Math.random()));
 	}
 
-	removeAxon(){
-
+	//nudges the weight value of a random axon by a small amount
+	nudgeAxon(){
+		let i = Math.floor(Math.random()*this.axons.length);
+		let axon = this.axons[i];
+		let nudgeAmount = Math.random()>0.5?0.2:-0.2;
+		axon[0].feeders[axon[1]][1]+=nudgeAmount;
 	}
 
+	//changes the value of a random axon's weight value to a random amount
 	modifyAxon(){
-
+		let i = Math.floor(Math.random()*this.axons.length);
+		let axon = this.axons[i];
+		axon[0].feeders[axon[1]][1]=Math.random();
 	}
 
+	//creats a neuron at a random layer
 	createNeuron(){
-
+		let neuron = new Neuron();
+		let layerIndex = 1+Math.floor(Math.random()*N_INTERMEDIATE_LAYERS);
+		this.neuronLayers[layerIndex].push(neuron);
 	}
 
-	removeNeuron(){
-
-	}
-
+	//modifies a neuron's bias
 	modifyNeuron(){
+		this.getRandomNeuron(1, this.neuronLayers.length).bias = Math.random();
+	}
 
+	//returns a clone of this neural net
+	clone(){
+		let neuronMapping = {};
+		let positionMapping = {};
+		for(let i=0;i<this.neuronLayers.length;i++){
+			let neuronLayer = this.neuronLayers[i];
+			for(let j=0;j<neuronLayer.length;j++){
+				const neuron = neuronLayer[j];
+				neuronMapping[neuron] = neuron.clone(neuronMapping);
+				positionMapping[neuronMapping[neuron]] = [i,j];
+			}
+		}
+
+		let returner = new NeuralNet();
+
+		for(let newNeuron of neuronMapping){
+			let position = positionMapping[newNeuron];
+			returner.neuronLayers[position[0]][position[1]]=newNeuron;
+		}
+
+		for(let oldAxon of this.axons){
+			let newAxon = [
+				neuronMapping[oldAxon[0]],
+				oldAxon[1]
+			];
+			returner.axons.push(newAxon);
+		}
+
+		return returner;
 	}
 }
+
+const FROG_TIMEOUT = 500;
 
 class FrogPlayer{
 	constructor(neuralNet){
@@ -369,12 +517,16 @@ class FrogPlayer{
 		];
 		this.neuralNet = neuralNet;
 		this.wasDead = false;
+		this.timer = 0;
+		this.reset();
 	}
 
 	reset(world){
 		this.world = world;
 		this.frog = new Frog(Math.floor(HORIZONTAL_CELLS/2),0);
+		this.maxY = this.frog.y;
 		this.wasDead = false;
+		this.timer = 0;
 	}
 
 	//returns true if not dead
@@ -407,6 +559,9 @@ class FrogPlayer{
 		if(!this.world.isPositionClear(this.frog.x, this.frog.y)){
 			this.frog.die();
 		}
+		if(this.shouldTerminate()){
+			this.frog.die();
+		}
 		
 		//then, move the frog based on the output
 		switch(maxIndex){
@@ -418,6 +573,10 @@ class FrogPlayer{
 			break;
 		case 2:
 			this.frog.up();
+			if(this.frog.y > this.maxY){
+				this.maxY = this.frog.Y;
+				this.timer = 0;
+			}
 			break;
 		case 3:
 			this.frog.down();
@@ -430,7 +589,19 @@ class FrogPlayer{
 	}
 
 	getFitness(){
+		
+	}
 
+	mutate() {
+		//todo
+	}
+
+	//called if the frog hasn't made progress
+	shouldTerminate() {
+		if(this.timer++ > FROG_TIMEOUT){
+			return true;
+		}
+		return false;
 	}
 
 }
@@ -453,10 +624,12 @@ function setup() {
 	}
 
 	createRoad = function(){
-		let size = CELL_SIZE * ( 0.8 + Math.random()*1.5 );
-		let minSeparation = 1 * size;
+		//let size = CELL_SIZE * ( 0.8 + Math.random()*1.5 );
+		let size = CELL_SIZE * (1.5);
+		let minSeparation = 2 * size;
 		let maxSeparation = 6 * size;
-		let velocity = 0.75 + 1.5*Math.random();
+		//let velocity = 0.75 + 1.5*Math.random();
+		let velocity = 1.0;
 		if(Math.random()<0.5)
 			velocity *= -1;
 		//let Car = getMovingObjectGenerator(CELL_SIZE*(size), minSeparation, maxSeparation, velocity, color(255,0,0));
@@ -494,9 +667,14 @@ function draw() {
 	applyMatrix();
 	translate(width/2, height*2/3);
 	scale(1,-1);
+	
+	var y = controller.getBestFrog();
+	translate(0, -CELL_SIZE*y);
 	myWorld.draw();
 	frog.draw();
 	controller.draw();
+	translate(0, CELL_SIZE*y);
+	
 	if(!running){
 		controller.simulate();
 	}
@@ -542,7 +720,7 @@ class Controller{
 	getBestFrog(){
 		var best = 0;
 		for(var i = 0;i<this.frogs.length;i++){
-			if(this.frogs[i].frog.y > best){
+			if(this.frogs[i].frog.y > best && !this.frogs[i].frog.isDead){
 				best = this.frogs[i].frog.y;
 			}
 		}
@@ -577,7 +755,6 @@ class Controller{
 		if(this.running){
 			for(var i = 0;i<this.frogs.length;i++){
 				var alive = this.frogs[i].draw();
-				//console.log(this.frogs[i].frog.y);
 			}
 		}
 	}
