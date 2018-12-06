@@ -310,7 +310,12 @@ const OUTPUT_SIZE = 5;
 const N_INTERMEDIATE_LAYERS = 2;
 
 function activationFunction(inputs, bias) {
-	//TODO
+	let sum = 0;
+	for(let input of inputs){
+		sum+= input;
+	}
+	sum+= bias;
+	return Math.tanh(sum);
 }
 
 class Neuron {
@@ -321,7 +326,7 @@ class Neuron {
 	}
 
 	calc() {
-		this.activation = activationFunction(this.feeders.map(feeder => feeder[0].activation*feeder[1]));
+		this.activation = activationFunction(this.feeders.map(feeder => feeder[0].activation*feeder[1]), this.bias);
 	}
 
 	addAxon(feederNeuron, weight){
