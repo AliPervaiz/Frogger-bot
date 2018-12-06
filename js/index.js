@@ -493,7 +493,6 @@ class NeuralNet{
 			let position = positionMapping[newNeuron];
 			returner.neuronLayers[position[0]][position[1]]=newNeuron;
 		}
-
 		for(let oldAxon of this.axons){
 			let newAxon = [
 				neuronMapping[oldAxon[0]],
@@ -506,6 +505,8 @@ class NeuralNet{
 	}
 }
 
+const FROG_TIMEOUT = 500;
+
 class FrogPlayer{
 	constructor(neuralNet){
 		this.data = [
@@ -515,12 +516,16 @@ class FrogPlayer{
 		];
 		this.neuralNet = neuralNet;
 		this.wasDead = false;
+		this.timer = 0;
+		this.reset();
 	}
 
 	reset(world){
 		this.world = world;
 		this.frog = new Frog(Math.floor(HORIZONTAL_CELLS/2),0);
+		this.maxY = this.frog.y;
 		this.wasDead = false;
+		this.timer = 0;
 	}
 
 	//returns true if not dead
@@ -553,6 +558,9 @@ class FrogPlayer{
 		if(!this.world.isPositionClear(this.frog.x, this.frog.y)){
 			this.frog.die();
 		}
+		if(this.shouldTerminate()){
+			this.frog.die();
+		}
 		
 		//then, move the frog based on the output
 		switch(maxIndex){
@@ -564,6 +572,10 @@ class FrogPlayer{
 			break;
 		case 2:
 			this.frog.up();
+			if(this.frog.y > this.maxY){
+				this.maxY = this.frog.Y;
+				this.timer = 0;
+			}
 			break;
 		case 3:
 			this.frog.down();
@@ -576,7 +588,19 @@ class FrogPlayer{
 	}
 
 	getFitness(){
+		
+	}
 
+	mutate() {
+		//todo
+	}
+
+	//called if the frog hasn't made progress
+	shouldTerminate() {
+		if(this.timer++ > FROG_TIMEOUT){
+			return true;
+		}
+		return false;
 	}
 
 	mutate() {
@@ -608,10 +632,12 @@ function setup() {
 	}
 
 	createRoad = function(){
-		let size = CELL_SIZE * ( 0.8 + Math.random()*1.5 );
-		let minSeparation = 1 * size;
+		//let size = CELL_SIZE * ( 0.8 + Math.random()*1.5 );
+		let size = CELL_SIZE * (1.5);
+		let minSeparation = 2 * size;
 		let maxSeparation = 6 * size;
-		let velocity = 0.75 + 1.5*Math.random();
+		//let velocity = 0.75 + 1.5*Math.random();
+		let velocity = 1.0;
 		if(Math.random()<0.5)
 			velocity *= -1;
 		//let Car = getMovingObjectGenerator(CELL_SIZE*(size), minSeparation, maxSeparation, velocity, color(255,0,0));
@@ -737,7 +763,6 @@ class Controller{
 		if(this.running){
 			for(var i = 0;i<this.frogs.length;i++){
 				var alive = this.frogs[i].draw();
-				//console.log(this.frogs[i].frog.y);
 			}
 		}
 	}
