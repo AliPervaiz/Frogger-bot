@@ -493,7 +493,6 @@ class NeuralNet{
 			let position = positionMapping[newNeuron];
 			returner.neuronLayers[position[0]][position[1]]=newNeuron;
 		}
-
 		for(let oldAxon of this.axons){
 			let newAxon = [
 				neuronMapping[oldAxon[0]],
@@ -602,6 +601,15 @@ class FrogPlayer{
 			return true;
 		}
 		return false;
+	}
+
+	mutate() {
+		//todo
+	}
+
+	//called if the frog hasn't made progress
+	shouldTerminate() {
+		//todo
 	}
 
 }
