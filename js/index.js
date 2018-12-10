@@ -1,6 +1,9 @@
+// TODO:
+// 1. Fitness function
+// 2. Get mutant of frog player
 
-  /////////////
- // TERRAIN //
+/////////////
+// TERRAIN //
 /////////////
 
 const HORIZONTAL_CELLS = 15;
@@ -307,18 +310,27 @@ const OUTPUT_SIZE = 5;
 const N_INTERMEDIATE_LAYERS = 2;
 
 function activationFunction(inputs, bias) {
-	//TODO
+	let sum = 0;
+	for(let input of inputs){
+		sum+= input;
+	}
+	sum+= bias;
+	return Math.tanh(sum);
+}
+
+function getRand(){
+	return 2*Math.random() - 1;
 }
 
 class Neuron {
 	constructor() {
 		this.activation = 0;
 		this.feeders = [];
-		this.bias = Math.random();
+		this.bias = getRand();
 	}
 
 	calc() {
-		this.activation = activationFunction(this.feeders.map(feeder => feeder[0].activation*feeder[1]));
+		this.activation = activationFunction(this.feeders.map(feeder => feeder[0].activation*feeder[1]), this.bias);
 	}
 
 	addAxon(feederNeuron, weight){
@@ -444,7 +456,7 @@ class NeuralNet{
 		let endNeuron = getRandomNeuron(1,this.neuronLayers.length);
 		let startNeuron = this.getRandomNeuron(0,endNeuron[1]);
 
-		this.axons.push(endNeuron[0].addAxon(startNeuron[0], Math.random()));
+		this.axons.push(endNeuron[0].addAxon(startNeuron[0], getRand()));
 	}
 
 	//nudges the weight value of a random axon by a small amount
@@ -459,7 +471,7 @@ class NeuralNet{
 	modifyAxon(){
 		let i = Math.floor(Math.random()*this.axons.length);
 		let axon = this.axons[i];
-		axon[0].feeders[axon[1]][1]=Math.random();
+		axon[0].feeders[axon[1]][1]=getRand();
 	}
 
 	//creats a neuron at a random layer
@@ -471,7 +483,7 @@ class NeuralNet{
 
 	//modifies a neuron's bias
 	modifyNeuron(){
-		this.getRandomNeuron(1, this.neuronLayers.length).bias = Math.random();
+		this.getRandomNeuron(1, this.neuronLayers.length).bias = getRand();
 	}
 
 	//returns a clone of this neural net
@@ -526,6 +538,7 @@ class FrogPlayer{
 		this.maxY = this.frog.y;
 		this.wasDead = false;
 		this.timer = 0;
+		this.fitness = 0;
 	}
 
 	//returns true if not dead
@@ -534,12 +547,13 @@ class FrogPlayer{
 			if(!this.frog.wasDead){
 				this.frog.wasDead = true;
 				//this is when the frog dies
+				this.fitness = this.frog.y;
 			}
 			return false;
 		}
 
 		this.data.forEach(grid=>grid.evaluate(this.world, this.frog.x, this.frog.y));
-		/*let output = this.neuralNet.feed(this.data);	//feed neural network grid data
+		let output = this.neuralNet.feed(this.data);	//feed neural network grid data
 		
 		//calculate max index of output (this will be used to determine which move to make)
 		let max = -999;									
@@ -549,13 +563,11 @@ class FrogPlayer{
 				max = value;
 				maxIndex = index;
 			}
-		});*/
-		
-		var maxIndex = Math.floor(Math.random()*5);
+		});
 
 		this.frog.draw();
 		
-		if(!this.world.isPositionClear(this.frog.x, this.frog.y)){
+		if(!this.world.isPositionClear(this.frog.x, this.frog.y) || this.shouldTerminate()){
 			this.frog.die();
 		}
 		if(this.shouldTerminate()){
@@ -588,11 +600,7 @@ class FrogPlayer{
 	}
 
 	getFitness(){
-		
-	}
-
-	mutate() {
-		//todo
+		return this.fitness;
 	}
 
 	//called if the frog hasn't made progress
@@ -603,13 +611,8 @@ class FrogPlayer{
 		return false;
 	}
 
-	mutate() {
-		//todo
-	}
-
-	//called if the frog hasn't made progress
-	shouldTerminate() {
-		//todo
+	getMutant() {
+		return new FrogPlayer(this.neuralNet.getMutant());
 	}
 
 }
@@ -700,6 +703,12 @@ function draw() {
 	
 }
 
+function maxFrogComparator(currentBest, newFrogPlayer){
+	if(currentBest.getFitness()<newFrogPlayer.getFitness())
+		return newFrogPlayer;
+	else return currentBest;
+}
+
 class Controller{
 	constructor(n, world){
 		this.world = world;
@@ -711,11 +720,22 @@ class Controller{
 		var frogs = [];
 		for(var i = 0;i<n;i++){
 			var frog = new FrogPlayer(new NeuralNet());
-			frog.reset(this.world);
 			frogs.push(frog);
 			//console.log(frogs[i]);
 		}
 		return frogs;
+	}
+
+	nextGeneration(){
+		this.setWorld(new World(10));
+		let newFrogs = [];
+		let maxFitness = this.frogs.reduce(maxFrogComparator).getFitness();
+		
+		while(newFrogs.length < POPULATION_SIZE){
+			const oldFrog = this.frogs[Math.floor(Math.random()*POPULATION_SIZE)];
+			if(Math.random()*maxFitness<oldFrog.getFitness())
+				newFrogs.push(oldFrog.getMutant());
+		}
 	}
 	
 	setWorld(world){
@@ -761,8 +781,12 @@ class Controller{
 	
 	draw(){
 		if(this.running){
+			let stillFrogsLeft = false;
 			for(var i = 0;i<this.frogs.length;i++){
-				var alive = this.frogs[i].draw();
+				stillFrogsLeft = this.frogs[i].draw() || stillFrogsLeft;
+			}
+			if(!stillFrogsLeft){
+				this.nextGeneration();
 			}
 		}
 	}
