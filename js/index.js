@@ -322,11 +322,13 @@ function getRand(){
 	return 2*Math.random() - 1;
 }
 
+let nextNeuronId = 0;
 class Neuron {
 	constructor() {
 		this.activation = 0;
 		this.feeders = [];
 		this.bias = getRand();
+		this.id = nextNeuronId++;
 	}
 
 	calc() {
@@ -342,7 +344,7 @@ class Neuron {
 		let returner = new Neuron();
 		returner.bias = this.bias;
 		this.feeders.forEach((feeder)=>{
-			returner.feeders.push([neuronMapping[feeder[0]], feeder[1]]);
+			returner.feeders.push([neuronMapping[feeder[0].id], feeder[1]]);
 		});
 		return returner;
 	}
@@ -399,6 +401,16 @@ class NeuralNet{
 			for(let i=0;i<numCreations;i++)
 				returner.createNeuron();
 		
+		let numNeuronModifies = Math.ceil((Math.random()-0.5)*5);
+		if(numNeuronModifies>0)
+			for(let i=0;i<numNeuronModifies;i++)
+				returner.modifyNeuron();
+
+		let numNeuronNudges = Math.ceil((Math.random()-0.5)*5);
+		if(numNeuronNudges>0)
+			for(let i=0;i<numNeuronNudges;i++)
+				returner.nudgeNeuron();
+		
 		let numNudges = Math.ceil((Math.random()-0.3)*10);
 		if(numNudges>0)
 			for(let i=0;i<numNudges;i++)
@@ -444,8 +456,6 @@ class NeuralNet{
 			neuron = this.neuronLayers[layerIndex][nIndex];
 			break;
 		}
-		if(neuron==undefined)
-			console.log(":(");
 		return [neuron, layerIndex, nIndex];
 	}
 
@@ -490,6 +500,13 @@ class NeuralNet{
 		this.getRandomNeuron(1, this.neuronLayers.length).bias = getRand();
 	}
 
+	//modifies a neuron's bias
+	nudgeNeuron(){
+		let i = Math.floor(Math.random()*this.axons.length);
+		let nudgeAmount = Math.random()>0.5?0.2:-0.2;
+		this.getRandomNeuron(1, this.neuronLayers.length).bias += nudgeAmount;
+	}
+
 	//returns a clone of this neural net
 	clone(){
 		let neuronMapping = {};
@@ -497,21 +514,21 @@ class NeuralNet{
 		for(let i=0;i<this.neuronLayers.length;i++){
 			let neuronLayer = this.neuronLayers[i];
 			for(let j=0;j<neuronLayer.length;j++){
-				const neuron = neuronLayer[j];
-				neuronMapping[neuron] = neuron.clone(neuronMapping);
-				positionMapping[neuronMapping[neuron]] = [i,j];
+				let neuron = neuronLayer[j];
+				neuronMapping[neuron.id] = neuron.clone(neuronMapping);
+				positionMapping[neuronMapping[neuron.id].id] = [i,j];
 			}
 		}
 
 		let returner = new NeuralNet();
 
 		for(let newNeuron of Object.values(neuronMapping)){
-			let position = positionMapping[newNeuron];
+			let position = positionMapping[newNeuron.id];
 			returner.neuronLayers[position[0]][position[1]]=newNeuron;
 		}
 		for(let oldAxon of this.axons){
 			let newAxon = [
-				neuronMapping[oldAxon[0]],
+				neuronMapping[oldAxon[0].id],
 				oldAxon[1]
 			];
 			returner.axons.push(newAxon);
@@ -520,6 +537,7 @@ class NeuralNet{
 		return returner;
 	}
 }
+
 
 const FROG_TIMEOUT = 500;
 
@@ -601,6 +619,7 @@ class FrogPlayer{
 			break;
 		}
 
+		return true;
 	}
 
 	getFitness(){
@@ -623,12 +642,10 @@ class FrogPlayer{
 
 let Car;
 let terrainRoad;
-let myWorld;
-let frog;
 let controller;
 var running = false;
 
-const POPULATION_SIZE = 25;
+const POPULATION_SIZE = 120;
 
 function setup() {
 	FROG_COLOR = color(0,120,0);
@@ -652,32 +669,12 @@ function setup() {
 		return new Terrain(color(120), Car, 1);
 	}
 	
-	myWorld = new World(10);
-	controller = new Controller(POPULATION_SIZE, myWorld);
-	frog = new Frog(Math.floor(HORIZONTAL_CELLS/2),0);
+	controller = new Controller(POPULATION_SIZE, new World(10));
 }
 
 function draw() {
 	background(GRASS_COLOR);
 	noStroke();
-
-	//check for movement
-	if(keyIsPressed){
-		switch(keyCode){
-		case UP_ARROW:
-			frog.up();
-			break;
-		case DOWN_ARROW:
-			frog.down();
-			break;
-		case LEFT_ARROW:
-			frog.left();
-			break;
-		case RIGHT_ARROW:
-			frog.right();
-			break;
-		}
-	}
 
 	applyMatrix();
 	translate(width/2, height*2/3);
@@ -685,18 +682,8 @@ function draw() {
 	
 	var y = controller.getBestFrog();
 	translate(0, -CELL_SIZE*y);
-	myWorld.draw();
-	frog.draw();
 	controller.draw();
 	translate(0, CELL_SIZE*y);
-	
-	if(!running){
-		controller.simulate();
-	}
-
-	if(!myWorld.isPositionClear(frog.x, frog.y)){
-		frog.die();
-	}
 
 	resetMatrix();
 	
@@ -738,12 +725,13 @@ class Controller{
 		
 		while(newFrogs.length < POPULATION_SIZE){
 			const oldFrog = this.frogs[Math.floor(Math.random()*POPULATION_SIZE)];
-			if(Math.random()*maxFitness<=oldFrog.getFitness()){
+			if(Math.random()*maxFitness-0.07<=oldFrog.getFitness()){
 				let newFrog = oldFrog.getMutant();
 				newFrog.reset(this.world);
 				newFrogs.push(newFrog);
 			}
 		}
+		this.frogs = newFrogs;
 	}
 	
 	setWorld(world){
@@ -763,39 +751,14 @@ class Controller{
 		return best;
 	}
 	
-	simulate(){
-		this.running = true;
-	}
-	
-	stop(){
-		this.running = false;
-	}
-	
-	/*
-	getBest(){
-		var best = {};
-		var fitnessAvg = 0;
-		var maxFitness = 0;
-		for(var i = 0;i<this.frogs.length;i++){
-			var fitness = this.frogs[i].getFitness();
-			if(fitness > maxFitness){
-				maxFitness = fitness;
-			}
-		}
-		
-		return best;
-	}
-	*/
-	
 	draw(){
-		if(this.running){
-			let stillFrogsLeft = false;
-			for(var i = 0;i<this.frogs.length;i++){
-				stillFrogsLeft = this.frogs[i].draw() || stillFrogsLeft;
-			}
-			if(!stillFrogsLeft){
-				this.nextGeneration();
-			}
+		this.world.draw();
+		let stillFrogsLeft = false;
+		for(var i = 0;i<this.frogs.length;i++){
+			stillFrogsLeft = this.frogs[i].draw() || stillFrogsLeft;
+		}
+		if(!stillFrogsLeft){
+			this.nextGeneration();
 		}
 	}
 	
