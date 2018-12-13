@@ -693,6 +693,8 @@ function setup() {
 	controller = new Controller(POPULATION_SIZE, new World(10));
 }
 
+let bestY;
+
 function draw() {
 	background(GRASS_COLOR);
 	noStroke();
@@ -702,6 +704,7 @@ function draw() {
 	scale(1,-1);
 	
 	var y = controller.getBestFrog();
+	bestY = y;
 	translate(0, -CELL_SIZE*y);
 	controller.draw();
 	translate(0, CELL_SIZE*y);
@@ -718,7 +721,8 @@ function draw() {
 	textAlign(LEFT, TOP);
 	text(`Generation ${controller.genNumber+1}`, 30, 30);
 	text(`Dist: ${y}`, 30, 80);
-	
+	text(`# Alive: ${controller.alive}`, 30, 130);
+	controller.drawStats();
 }
 
 function maxFrogComparator(currentBest, newFrogPlayer){
@@ -727,12 +731,17 @@ function maxFrogComparator(currentBest, newFrogPlayer){
 	else return currentBest;
 }
 
+const HISTORIAN_WIDTH = 300;
 class Controller{
 	constructor(n, world){
 		this.world = world;
 		this.frogs = this.createPopulation(n);
 		this.running = false;
 		this.genNumber = 0;
+		this.alive = 0;
+		this.historian = createGraphics(HISTORIAN_WIDTH, POPULATION_SIZE);
+		this.historian.background(0);
+		this.frameNumber = 0;
 	}
 	
 	createPopulation(n){
@@ -761,6 +770,8 @@ class Controller{
 		}
 		this.frogs = newFrogs;
 		this.genNumber++;
+		this.frameNumber = 0;
+		this.historian.background(0);
 	}
 	
 	setWorld(world){
@@ -781,14 +792,35 @@ class Controller{
 	}
 	
 	draw(){
+		this.alive = 0;
 		this.world.draw();
 		let stillFrogsLeft = false;
 		for(var i = 0;i<this.frogs.length;i++){
-			stillFrogsLeft = this.frogs[i].draw() || stillFrogsLeft;
+			let isAlive = this.frogs[i].draw();
+			if(isAlive)
+				this.alive++;
+			stillFrogsLeft = isAlive || stillFrogsLeft;
 		}
 		if(!stillFrogsLeft){
 			this.nextGeneration();
 		}
+	}
+
+	drawStats(){
+		let x = (this.frameNumber++)%HISTORIAN_WIDTH;
+		this.historian.stroke(0);
+		this.historian.line(x, 0, x, POPULATION_SIZE);
+		if(Math.floor(this.frameNumber/HISTORIAN_WIDTH)%2 == 0)
+			this.historian.stroke(0,200,255);
+		else
+			this.historian.stroke(0,255,255);
+		this.historian.line(x, POPULATION_SIZE, x, POPULATION_SIZE-this.alive);
+		this.historian.noStroke();
+		this.historian.fill(255,0,0);
+		let y = sqrt(bestY)*4;
+		this.historian.rect(x-1,POPULATION_SIZE-y-3, 3,3);
+		resetMatrix();
+		image(this.historian, 0, 0);
 	}
 	
 }
