@@ -232,8 +232,8 @@ class Frog {
 	}
 }
 
-const GRID_WIDTH = 3;
-const GRID_HEIGHT = 2;
+const GRID_WIDTH = 2;
+const GRID_HEIGHT = 3;
 
 const TYPE_POS_VEL = 1;
 const TYPE_NEG_VEL = 2;
@@ -572,6 +572,7 @@ class FrogPlayer{
 		this.neuralNet = neuralNet;
 		this.wasDead = false;
 		this.timer = 0;
+		this.fitness = 0;
 		this.reset();
 	}
 
@@ -581,7 +582,6 @@ class FrogPlayer{
 		this.maxY = this.frog.y;
 		this.wasDead = false;
 		this.timer = 0;
-		this.fitness = 0;
 	}
 
 	//returns true if not dead
@@ -590,7 +590,7 @@ class FrogPlayer{
 			if(!this.frog.wasDead){
 				this.frog.wasDead = true;
 				//this is when the frog dies
-				this.fitness = this.frog.y;
+				this.fitness += this.frog.y;
 			}
 			return false;
 		}
@@ -666,7 +666,7 @@ let terrainRoad;
 let controller;
 var running = false;
 
-const POPULATION_SIZE = 240;
+const POPULATION_SIZE = 400;
 
 function setup() {
 	FROG_COLOR = color(0,120,0);
@@ -719,7 +719,7 @@ function draw() {
 	fill(255);
 	textSize(30);
 	textAlign(LEFT, TOP);
-	text(`Generation ${controller.genNumber+1}`, 30, 30);
+	text(`Generation ${controller.genNumber+1} - ${controller.roundNumber}`, 30, 30);
 	text(`Dist: ${y}`, 30, 80);
 	text(`# Alive: ${controller.alive}`, 30, 130);
 	controller.drawStats();
@@ -742,6 +742,7 @@ class Controller{
 		this.historian = createGraphics(HISTORIAN_WIDTH, POPULATION_SIZE);
 		this.historian.background(0);
 		this.frameNumber = 0;
+		this.roundNumber = 0;
 	}
 	
 	createPopulation(n){
@@ -755,8 +756,16 @@ class Controller{
 		return frogs;
 	}
 
-	nextGeneration(){
+	nextRound(){
 		this.setWorld(new World(10));
+		this.frameNumber = 0;
+		this.historian.background(0);
+		this.roundNumber++;
+		this.frogs.forEach(frog=>frog.reset(this.world));
+	}
+
+	nextGeneration(){
+		this.roundNumber=0;
 		let newFrogs = [];
 		let maxFitness = this.frogs.reduce(maxFrogComparator).getFitness();
 		
@@ -770,8 +779,6 @@ class Controller{
 		}
 		this.frogs = newFrogs;
 		this.genNumber++;
-		this.frameNumber = 0;
-		this.historian.background(0);
 	}
 	
 	setWorld(world){
@@ -802,7 +809,10 @@ class Controller{
 			stillFrogsLeft = isAlive || stillFrogsLeft;
 		}
 		if(!stillFrogsLeft){
-			this.nextGeneration();
+			this.nextRound();
+			if(this.roundNumber==4){
+				this.nextGeneration();
+			}
 		}
 	}
 
@@ -820,7 +830,7 @@ class Controller{
 		let y = sqrt(bestY)*4;
 		this.historian.rect(x-1,POPULATION_SIZE-y-3, 3,3);
 		resetMatrix();
-		image(this.historian, 0, 0);
-	}
+		image(this.historian, 0, height-POPULATION_SIZE);
+}
 	
 }
