@@ -81,7 +81,7 @@ function getMovingObjectGenerator(width, minSeparation, maxSeparation, velocity,
 
 	let MovingObject = function(terrain){
 		this.terrain = terrain;
-		this.terrain.velocity==velocity;
+		this.terrain.velocity=velocity;
 		this.cooldown = randomCooldown();
 		this.x = (-HORIZONTAL_CELLS*CELL_SIZE-width)/2;
 		if(velocity<0)
@@ -426,6 +426,11 @@ class NeuralNet{
 			for(let i=0;i<numCreationsAxon;i++)
 				returner.createAxon();
 		
+		let numRemoveAxons = Math.ceil((Math.random()-0.8)*5);
+		if(numRemoveAxons>0)
+			for(let i=0;i<numRemoveAxons;i++)
+				returner.removeAxon();
+		
 		return returner;
 	}
 
@@ -488,6 +493,22 @@ class NeuralNet{
 		axon[0].feeders[axon[1]][1]=getRand();
 	}
 
+	//remvoe an axon from the net
+	removeAxon(){
+		if(this.axons.length==0)
+			return;
+		let i = Math.floor(Math.random()*this.axons.length);
+		let axon = this.axons[i];
+
+		axon[0].feeders.splice(axon[1],1);
+		this.axons.splice(i,1);
+		for(let i=0;i<this.axons.length;i++){
+			let otherAxon = this.axons[i];
+			if(otherAxon[0]==axon[0] && otherAxon[1]>axon[1])
+				otherAxon[1]--;
+		}
+	}
+
 	//creats a neuron at a random layer
 	createNeuron(){
 		let neuron = new Neuron();
@@ -539,7 +560,7 @@ class NeuralNet{
 }
 
 
-const FROG_TIMEOUT = 500;
+const FROG_TIMEOUT = 700;
 
 class FrogPlayer{
 	constructor(neuralNet){
@@ -645,7 +666,7 @@ let terrainRoad;
 let controller;
 var running = false;
 
-const POPULATION_SIZE = 120;
+const POPULATION_SIZE = 240;
 
 function setup() {
 	FROG_COLOR = color(0,120,0);
@@ -691,6 +712,12 @@ function draw() {
 	fill(0);
 	rect(0,0,width/2-CELL_SIZE*HORIZONTAL_CELLS/2,height);
 	rect(width/2+CELL_SIZE*HORIZONTAL_CELLS/2,0,width/2-CELL_SIZE*HORIZONTAL_CELLS/2,height);
+
+	fill(255);
+	textSize(30);
+	textAlign(LEFT, TOP);
+	text(`Generation ${controller.genNumber+1}`, 30, 30);
+	text(`Dist: ${y}`, 30, 80);
 	
 }
 
@@ -705,6 +732,7 @@ class Controller{
 		this.world = world;
 		this.frogs = this.createPopulation(n);
 		this.running = false;
+		this.genNumber = 0;
 	}
 	
 	createPopulation(n){
@@ -732,6 +760,7 @@ class Controller{
 			}
 		}
 		this.frogs = newFrogs;
+		this.genNumber++;
 	}
 	
 	setWorld(world){
